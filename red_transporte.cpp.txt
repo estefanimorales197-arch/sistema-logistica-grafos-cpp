@@ -1,0 +1,321 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <queue>
+#include <stack>
+
+using namespace std;
+
+struct Ruta {
+    int destinoId;
+    int costoTiempo;
+
+    Ruta(int d, int p) {
+        destinoId = d;
+        costoTiempo = p;
+    }
+};
+
+class RedTransporte {
+private:
+    vector<string> ciudades;
+    vector<vector<Ruta>> listaAdyacencia;
+
+public:
+    void agregarCiudad(string nombre) {
+        ciudades.push_back(nombre);
+        listaAdyacencia.push_back(vector<Ruta>());
+    }
+
+    void actualizarCiudad(int id, string nuevoNombre) {
+        if (id >= 0 && id < (int)ciudades.size()) {
+            ciudades[id] = nuevoNombre;
+        }
+    }
+
+    void agregarRuta(int origen, int destino, int peso) {
+        if (origen >= 0 && origen < (int)ciudades.size() && destino >= 0 && destino < (int)ciudades.size()) {
+            listaAdyacencia[origen].push_back(Ruta(destino, peso));
+        }
+    }
+
+    void eliminarRuta(int origen, int destino) {
+        if (origen >= 0 && origen < (int)ciudades.size()) {
+            for (size_t i = 0; i < listaAdyacencia[origen].size(); i++) {
+                if (listaAdyacencia[origen][i].destinoId == destino) {
+                    listaAdyacencia[origen].erase(listaAdyacencia[origen].begin() + i);
+                    break;
+                }
+            }
+        }
+    }
+
+    void mostrarCiudades() {
+        cout << "\n--- CIUDADES REGISTRADAS ---\n";
+        for (size_t i = 0; i < ciudades.size(); i++) {
+            cout << i << ". " << ciudades[i] << "\n";
+        }
+    }
+
+    void mostrarListaAdyacencia() {
+        cout << "\n--- LISTA DE ADYACENCIA ---\n";
+        for (size_t i = 0; i < ciudades.size(); i++) {
+            cout << i << " [" << ciudades[i] << "]: ";
+            for (Ruta r : listaAdyacencia[i]) {
+                cout << "(" << r.destinoId << " [" << ciudades[r.destinoId] << "], Peso: " << r.costoTiempo << ") ";
+            }
+            cout << "\n";
+        }
+    }
+
+    void mostrarMatrizAdyacencia() {
+        cout << "\n--- MATRIZ DE ADYACENCIA ---\n";
+        size_t n = ciudades.size();
+
+        cout << "\t";
+        for (size_t i = 0; i < n; i++) {
+            cout << i << "\t";
+        }
+        cout << "\n";
+
+        for (size_t i = 0; i < n; i++) {
+            cout << i << "\t";
+            for (size_t j = 0; j < n; j++) {
+                int pesoEncontrado = 0;
+                for (Ruta r : listaAdyacencia[i]) {
+                    if (r.destinoId == (int)j) {
+                        pesoEncontrado = r.costoTiempo;
+                        break;
+                    }
+                }
+                cout << pesoEncontrado << "\t";
+            }
+            cout << "\n";
+        }
+    }
+
+    void mostrarListaArcos() {
+        cout << "\n--- LISTA DE ARCOS (RUTAS ACTIVAS) ---\n";
+        for (size_t i = 0; i < ciudades.size(); i++) {
+            for (Ruta r : listaAdyacencia[i]) {
+                cout << ciudades[i] << " (nodo " << i << ") -> " 
+                     << ciudades[r.destinoId] << " (nodo " << r.destinoId 
+                     << ") | Peso: " << r.costoTiempo << "\n";
+            }
+        }
+    }
+
+    void recorridoBFS(int inicio) {
+        if (inicio < 0 || inicio >= (int)ciudades.size()) return;
+
+        vector<bool> visitado(ciudades.size(), false);
+        queue<int> cola;
+
+        visitado[inicio] = true;
+        cola.push(inicio);
+
+        cout << "\n--- RECORRIDO EN ANCHURA (BFS) DESDE " << ciudades[inicio] << " ---\n";
+
+        while (!cola.empty()) {
+            int actual = cola.front();
+            cola.pop();
+
+            cout << actual << " [" << ciudades[actual] << "] ";
+
+            for (Ruta r : listaAdyacencia[actual]) {
+                if (!visitado[r.destinoId]) {
+                    visitado[r.destinoId] = true;
+                    cola.push(r.destinoId);
+                }
+            }
+        }
+        cout << "\n";
+    }
+
+    void recorridoDFS(int inicio) {
+        if (inicio < 0 || inicio >= (int)ciudades.size()) return;
+
+        vector<bool> visitado(ciudades.size(), false);
+        stack<int> pila;
+
+        pila.push(inicio);
+
+        cout << "\n--- RECORRIDO EN PROFUNDIDAD (DFS) DESDE " << ciudades[inicio] << " ---\n";
+
+        while (!pila.empty()) {
+            int actual = pila.top();
+            pila.pop();
+
+            if (!visitado[actual]) {
+                visitado[actual] = true;
+                cout << actual << " [" << ciudades[actual] << "] ";
+
+                for (Ruta r : listaAdyacencia[actual]) {
+                    if (!visitado[r.destinoId]) {
+                        pila.push(r.destinoId);
+                    }
+                }
+            }
+        }
+        cout << "\n";
+    }
+
+    void mostrarDestinosDesde(int origen) {
+        if (origen < 0 || origen >= (int)ciudades.size()) {
+            cout << "La ciudad seleccionada no existe.\n";
+            return;
+        }
+
+        cout << "\n--- DESTINOS POSIBLES DESDE " << ciudades[origen] << " ---\n";
+        if (listaAdyacencia[origen].empty()) {
+            cout << "No hay rutas de salida registradas desde esta ciudad.\n";
+        } else {
+            for (Ruta r : listaAdyacencia[origen]) {
+                cout << "- Destino: " << ciudades[r.destinoId] << " | Tiempo/Costo: " << r.costoTiempo << "\n";
+            }
+        }
+    }
+
+    void estanConectadas(int origen, int destino) {
+        if (origen < 0 || origen >= (int)ciudades.size() || destino < 0 || destino >= (int)ciudades.size()) {
+            cout << "Una o ambas ciudades no existen en el sistema.\n";
+            return;
+        }
+
+        for (Ruta r : listaAdyacencia[origen]) {
+            if (r.destinoId == destino) {
+                cout << "\nSí, existe una conexión directa desde " << ciudades[origen] 
+                     << " hacia " << ciudades[destino] << " con un costo/tiempo de " << r.costoTiempo << ".\n";
+                return;
+            }
+        }
+        cout << "\nNo existe una conexión directa entre " << ciudades[origen] << " y " << ciudades[destino] << ".\n";
+    }
+};
+
+int main() {
+    RedTransporte red;
+
+    red.agregarCiudad("Bogota");      // Nodo 0
+    red.agregarCiudad("Medellin");    // Nodo 1
+    red.agregarCiudad("Cali");        // Nodo 2
+    red.agregarCiudad("Bucaramanga"); // Nodo 3
+
+    red.agregarRuta(0, 1, 12);
+    red.agregarRuta(0, 2, 25);
+    red.agregarRuta(1, 3, 18);
+    red.agregarRuta(2, 1, 8);
+    red.agregarRuta(2, 3, 14);
+    red.agregarRuta(3, 0, 30);
+
+    int opcion, origen, destino, peso;
+    string nombre;
+
+    do {
+        cout << "\n=============================================\n";
+        cout << "   SISTEMA DE GESTION DE LOGISTICA Y RUTAS   \n";
+        cout << "=============================================\n";
+        cout << "1. Agregar ciudad\n";
+        cout << "2. Actualizar nombre de ciudad\n";
+        cout << "3. Agregar ruta (arco)\n";
+        cout << "4. Eliminar ruta (arco)\n";
+        cout << "5. Consultar destinos desde una ciudad\n";
+        cout << "6. Verificar conexion directa entre dos ciudades\n";
+        cout << "7. Recorrido en anchura (BFS)\n";
+        cout << "8. Recorrido en profundidad (DFS)\n";
+        cout << "9. Mostrar Lista de Adyacencia\n";
+        cout << "10. Mostrar Matriz de Adyacencia\n";
+        cout << "11. Mostrar Lista de Arcos\n";
+        cout << "0. Salir\n";
+        cout << "Seleccione una opcion: ";
+        cin >> opcion;
+
+        switch (opcion) {
+            case 1:
+                cout << "Ingrese el nombre de la nueva ciudad: ";
+                cin >> nombre;
+                red.agregarCiudad(nombre);
+                break;
+
+            case 2:
+                red.mostrarCiudades();
+                cout << "Ingrese el ID de la ciudad a actualizar: ";
+                cin >> origen;
+                cout << "Ingrese el nuevo nombre: ";
+                cin >> nombre;
+                red.actualizarCiudad(origen, nombre);
+                break;
+
+            case 3:
+                red.mostrarCiudades();
+                cout << "Ingrese ID de ciudad origen: ";
+                cin >> origen;
+                cout << "Ingrese ID de ciudad destino: ";
+                cin >> destino;
+                cout << "Ingrese el costo/tiempo de la ruta: ";
+                cin >> peso;
+                red.agregarRuta(origen, destino, peso);
+                break;
+
+            case 4:
+                red.mostrarCiudades();
+                cout << "Ingrese ID de ciudad origen: ";
+                cin >> origen;
+                cout << "Ingrese ID de ciudad destino a eliminar: ";
+                cin >> destino;
+                red.eliminarRuta(origen, destino);
+                break;
+
+            case 5:
+                red.mostrarCiudades();
+                cout << "Ingrese ID de la ciudad a consultar: ";
+                cin >> origen;
+                red.mostrarDestinosDesde(origen);
+                break;
+
+            case 6:
+                red.mostrarCiudades();
+                cout << "Ingrese ID de ciudad origen: ";
+                cin >> origen;
+                cout << "Ingrese ID de ciudad destino: ";
+                cin >> destino;
+                red.estanConectadas(origen, destino);
+                break;
+
+            case 7:
+                red.mostrarCiudades();
+                cout << "Ingrese ID de ciudad inicial para BFS: ";
+                cin >> origen;
+                red.recorridoBFS(origen);
+                break;
+
+            case 8:
+                red.mostrarCiudades();
+                cout << "Ingrese ID de ciudad inicial para DFS: ";
+                cin >> origen;
+                red.recorridoDFS(origen);
+                break;
+
+            case 9:
+                red.mostrarListaAdyacencia();
+                break;
+
+            case 10:
+                red.mostrarMatrizAdyacencia();
+                break;
+
+            case 11:
+                red.mostrarListaArcos();
+                break;
+
+            case 0:
+                cout << "Saliendo del sistema...\n";
+                break;
+
+            default:
+                cout << "Opcion no valida. Intente de nuevo.\n";
+        }
+    } while (opcion != 0);
+
+    return 0;
+}
